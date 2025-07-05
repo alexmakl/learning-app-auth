@@ -29,9 +29,22 @@
 		D32027D92E17BB2E00FABA97 /* LearningCardsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LearningCardsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D3BCFBCA2E19496C005F9618 /* Exceptions for "LearningCards" folder in "LearningCards" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D32027B92E17BB2C00FABA97 /* LearningCards */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D32027BC2E17BB2C00FABA97 /* LearningCards */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D3BCFBCA2E19496C005F9618 /* Exceptions for "LearningCards" folder in "LearningCards" target */,
+			);
 			path = LearningCards;
 			sourceTree = "<group>";
 		};
@@ -398,6 +411,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"LearningCards/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LearningCards/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -427,6 +441,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"LearningCards/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LearningCards/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

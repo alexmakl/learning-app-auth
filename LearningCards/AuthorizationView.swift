@@ -18,89 +18,41 @@ struct AuthorizationView: View {
                     .frame(height: geometry.size.height - formHeight(geometry: geometry))
                 
                 VStack(spacing: 14) {
-                    if viewModel.screenState == .phoneInput {
+                    switch viewModel.screenState {
+                    case .phoneInput:
                         PhoneInputView(viewModel: viewModel)
-                        
-                        VStack(spacing: 40) {
-                            Button(action: {
-                                viewModel.sendCode()
-                            }) {
-                                NextButtonView(isValid: viewModel.isPhoneValid)
-                            }
-                            .disabled(!viewModel.isPhoneValid)
-                            .animation(.easeInOut, value: viewModel.isPhoneValid)
-                            
-                            if let error = viewModel.error {
-                                Text(error)
-                                    .foregroundStyle(.white)
-                                    .background(.red)
-                                    .font(.caption)
-                            }
-                            
-                            RegisterButtonView()
-                        }
-                        
-                    } else if viewModel.screenState == .otpInput {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Вход")
-                                .font(.system(size: 26, weight: .bold))
-                                .foregroundColor(.black)
-                                .padding(.bottom, 10)
-
-                            (Text("Мы выслали вам код подтверждения на номер ")
-                            + Text(viewModel.phoneMasked).bold())
-                                .foregroundColor(.text001)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            HStack(alignment: .top, spacing: 4) {
-                                Text("Введите код")
-                                    .foregroundStyle(.text002)
-                                    .font(.headline)
-                                Text("*")
-                                    .foregroundStyle(.text003)
-                                    .font(.headline)
-                                Spacer()
-                            }
-                            
-                            OTPFields(code: $viewModel.code)
-                                .padding(.vertical, 8)
-                        }
-                        VStack(spacing: 24) {
-                            Button(action: {
-                                viewModel.checkCode()
-                            }) {
-                                NextButtonView(isValid: viewModel.isCodeValid)
-                            }
-                            .disabled(!viewModel.isCodeValid)
-                            .animation(.easeInOut, value: viewModel.isCodeValid)
-                            if let error = viewModel.error {
-                                Text(error)
-                                    .foregroundStyle(.white)
-                                    .background(.red)
-                                    .font(.caption)
-                            }
-                            TimerResendCodeView(viewModel: viewModel)
-                        }
+                    case .otpInput:
+                        OTPFormView(viewModel: viewModel)
                     }
                 }
-                .id(viewModel.screenState)
-                .padding(.top, 30)
-                .padding([.leading, .trailing], 24)
-                .padding(.bottom, 0)
+                .padding(.vertical, 30)
                 .background(
                     Color.white
                         .clipShape(RoundedCorner(radius: 20, corners: [.topLeft, .topRight]))
+                        .ignoresSafeArea(edges: .bottom)
                 )
                 .background(
-                    GeometryReader { formGeometry in
+                    GeometryReader { proxy in
                         Color.clear
-                            .preference(key: FormHeightPreferenceKey.self, value: formGeometry.size.height)
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    viewModel.currentFormHeight = proxy.size.height
+                                }
+                            }
+                            .onChange(of: viewModel.error) { _ in
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    viewModel.currentFormHeight = proxy.size.height
+                                }
+                            }
+                            .preference(key: FormHeightPreferenceKey.self, value: proxy.size.height)
                     }
                 )
-            }
-            .onPreferenceChange(FormHeightPreferenceKey.self) { value in
-                print("Обновилась высота формы: \(value)")
-                viewModel.currentFormHeight = value
+                .id(viewModel.screenState)
+                .onPreferenceChange(FormHeightPreferenceKey.self) { value in
+                    if value > 0 {
+                        viewModel.currentFormHeight = value
+                    }
+                }
             }
             .background {
                 Color.orange.ignoresSafeArea(edges: .top)
@@ -109,20 +61,19 @@ struct AuthorizationView: View {
     }
     
     private func formHeight(geometry: GeometryProxy) -> CGFloat {
-        print(viewModel.currentFormHeight)
         return max(viewModel.currentFormHeight, 300)
     }
 }
 
 struct FormHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 300
+    static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
     }
 }
 
 struct RoundedCorner: Shape {
-    var radius: CGFloat = 10.0
+    var radius: CGFloat = 20.0
     var corners: UIRectCorner = .allCorners
     func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(
@@ -137,57 +88,47 @@ struct RoundedCorner: Shape {
 struct OTPFields: View {
     @Binding var code: String
     @FocusState private var focusedIndex: Int?
+    @State private var digits: [String] = Array(repeating: "", count: 5)
     
     private let length = 5
     
     var body: some View {
         HStack(spacing: 12) {
-            ForEach(0..<length, id: \ .self) { i in
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        .frame(width: 48, height: 48)
-                    TextField("", text: Binding(
-                        get: { charAt(i) },
-                        set: { setChar($0, at: i) }
-                    ))
+            ForEach(0..<length, id: \.self) { i in
+                TextField("", text: $digits[i])
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
-                    .font(.title2)
+                    .nunitoBold(size: 16)
                     .foregroundStyle(.text001)
+                    .frame(width: 56, height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
                     .focused($focusedIndex, equals: i)
-                    .onChange(of: charAt(i)) { _ in
-                        if charAt(i).count == 1 && i < length - 1 {
+                    .onChange(of: digits[i]) { newValue in
+                        let filtered = newValue.filter(\.isNumber)
+                        if filtered.count > 1 {
+                            for (offset, digit) in filtered.prefix(length - i).enumerated() {
+                                digits[i + offset] = String(digit)
+                            }
+                        } else {
+                            digits[i] = filtered.isEmpty ? "" : String(filtered.suffix(1))
+                        }
+                        code = digits.joined()
+                        if !digits[i].isEmpty && i < length - 1 {
                             focusedIndex = i + 1
                         }
                     }
-                }
             }
         }
         .onAppear {
             focusedIndex = code.isEmpty ? 0 : min(code.count, length - 1)
-        }
-    }
-    
-    private func charAt(_ i: Int) -> String {
-        guard i < code.count else { return "" }
-        let idx = code.index(code.startIndex, offsetBy: i)
-        return String(code[idx])
-    }
-    private func setChar(_ new: String, at i: Int) {
-        var chars = Array(code)
-        if new.isEmpty {
-            if i < chars.count {
-                chars.remove(at: i)
-            }
-        } else if let digit = new.last, digit.isNumber {
-            if i < chars.count {
-                chars[i] = digit
-            } else if chars.count < length {
-                chars.append(digit)
+            let arr = Array(code)
+            for i in 0..<length {
+                digits[i] = i < arr.count ? String(arr[i]) : ""
             }
         }
-        code = String(chars.prefix(length))
     }
 }
 
@@ -202,12 +143,10 @@ struct PatternStarView: View {
             Image("background_pattern")
                 .resizable()
                 .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             Image("star_happy")
                 .resizable()
-                .frame(width: 236, height: 236)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: 236, maxHeight: 236)
         }
     }
 }
@@ -215,38 +154,46 @@ struct PatternStarView: View {
 struct PhoneInputView: View {
     @ObservedObject var viewModel: AuthorizationViewModel
     @State private var phoneInput: String = "+7 "
+    @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Вход")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundColor(.black)
-                .padding(.bottom, 10)
+            EnterTextView()
             
-            HStack(alignment: .top, spacing: 4) {
-                Text("Телефон")
-                    .foregroundStyle(.text002)
-                    .font(.headline)
-                Text("*")
-                    .foregroundStyle(.text003)
-                    .font(.headline)
-                Spacer()
-            }
+            TextFieldTitleView(title: "Телефон")
             
             TextField("+7 ___ ___-__-__", text: $phoneInput)
                 .onChange(of: phoneInput) { newValue in
                     viewModel.setPhoneMasked(newValue)
                     phoneInput = viewModel.phoneMasked
                 }
-                .font(Font.title3)
-                .foregroundStyle(.text003)
+                .nunitoBold(size: 16)
+                .foregroundStyle(isTextFieldFocused ? .text001 : .text003)
                 .keyboardType(.phonePad)
                 .padding()
                 .cornerRadius(8)
+                .focused($isTextFieldFocused)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(viewModel.isPhoneValid ? .accentColor : Color.gray.opacity(0.3), lineWidth: 1)
                 )
+        }
+        .padding(.horizontal, 24)
+        
+        VStack(spacing: 40) {
+            Button(action: {
+                viewModel.sendCode()
+            }) {
+                NextButtonView(isValid: viewModel.isPhoneValid)
+            }
+            .disabled(!viewModel.isPhoneValid)
+            .animation(.easeInOut, value: viewModel.isPhoneValid)
+            
+            if let error = viewModel.error {
+                ErrorView(error: error)
+            }
+            
+            RegisterButtonView()
         }
     }
 }
@@ -262,8 +209,17 @@ struct RegisterButtonView: View {
                 Text("Зарегистрироваться")
                     .foregroundColor(.accentColor)
             }
-            .font(.headline)
+            .nunitoBold(size: 16)
         }
+    }
+}
+
+struct EnterTextView: View {
+    var body: some View {
+        Text("Вход")
+            .nunitoBold(size: 28)
+            .foregroundColor(.text001)
+            .padding(.bottom, 10)
     }
 }
 
@@ -272,14 +228,17 @@ struct TimerResendCodeView: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            Text(String(format: "0:%02d", viewModel.timer))
-                .foregroundColor(.gray)
+            if viewModel.isTimerActive {
+                Text(String(format: "0:%02d", viewModel.timer))
+                    .foregroundColor(.text002)
+                    .nunitoBold(size: 16)
+            }
             Button(action: {
                 viewModel.restartTimer()
             }) {
                 Text("Отправить код повторно")
                     .foregroundColor(.accentColor)
-                    .bold()
+                    .nunitoBold(size: 16)
             }
             .disabled(viewModel.isTimerActive)
         }
@@ -293,9 +252,77 @@ struct NextButtonView: View {
         Text("Далее")
             .frame(maxWidth: .infinity)
             .padding()
-            .font(.headline)
+            .nunitoBold(size: 18)
             .background(isValid ? .accentColor : Color.gray.opacity(0.2))
             .foregroundColor(isValid ? .white : .gray)
             .cornerRadius(10)
+            .padding(.horizontal, 24)
+    }
+}
+
+struct TextFieldTitleView: View {
+    var title: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 4) {
+            Text("Введите код")
+                .foregroundStyle(.text002)
+                .nunitoBold(size: 14)
+            Text("*")
+                .foregroundStyle(.text003)
+                .font(.headline)
+            Spacer()
+        }
+    }
+}
+
+struct OTPFormView: View {
+    @ObservedObject var viewModel: AuthorizationViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EnterTextView()
+            
+            (Text("Мы выслали вам код подтверждения на номер ")
+             + Text(viewModel.phoneMasked).bold())
+            .nunitoMedium(size: 16)
+            .foregroundColor(.text001)
+            .fixedSize(horizontal: false, vertical: true)
+            
+            TextFieldTitleView(title: "Введите код")
+            
+            OTPFields(code: $viewModel.code)
+                .padding(.vertical, 0)
+        }
+        .padding(.horizontal, 24)
+        
+        VStack(spacing: 40) {
+            Button(action: {
+                viewModel.checkCode()
+            }) {
+                NextButtonView(isValid: viewModel.isCodeValid)
+            }
+            .disabled(!viewModel.isCodeValid)
+            .animation(.easeInOut, value: viewModel.isCodeValid)
+            
+            if let error = viewModel.error {
+                ErrorView(error: error)
+            }
+            TimerResendCodeView(viewModel: viewModel)
+        }
+    }
+}
+
+struct ErrorView: View {
+    var error: String
+    
+    var body: some View {
+        Text(error)
+            .foregroundStyle(.white)
+            .font(.system(size: 16, weight: .bold))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.red)
     }
 }
