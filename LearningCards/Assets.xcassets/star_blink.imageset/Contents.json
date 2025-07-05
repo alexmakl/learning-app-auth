@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "star_blink.pdf",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
