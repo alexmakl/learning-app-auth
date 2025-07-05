@@ -137,6 +137,9 @@ struct OTPFields: View {
 }
 
 struct PatternStarView: View {
+    @State private var starIndex = 0
+    let starImages = ["star_happy", "star_sleep", "star_blink"]
+    
     var body: some View {
         ZStack {
             Color.orange.ignoresSafeArea()
@@ -144,9 +147,18 @@ struct PatternStarView: View {
                 .resizable()
                 .scaledToFill()
             
-            Image("star_happy")
+            Image(starImages[starIndex])
                 .resizable()
                 .frame(maxWidth: 236, maxHeight: 236)
+                .transition(.scale.combined(with: .opacity))
+        }
+        .animation(.easeInOut, value: starIndex)
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { _ in
+                withAnimation {
+                    starIndex = (starIndex + 1) % starImages.count
+                }
+            }
         }
     }
 }
