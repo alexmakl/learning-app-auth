@@ -55,7 +55,7 @@ final class AuthorizationViewModel: ObservableObject {
     
     func sendCode() {
         guard isPhoneValid else {
-            error = "Некорректный номер телефона"
+            error = String(localized: "Incorrect phone number")
             return
         }
         error = nil
@@ -65,7 +65,7 @@ final class AuthorizationViewModel: ObservableObject {
     
     func checkCode() {
         guard isCodeValid else {
-            error = "Некорректный код"
+            error = String(localized: "Invalid code")
             return
         }
         error = nil

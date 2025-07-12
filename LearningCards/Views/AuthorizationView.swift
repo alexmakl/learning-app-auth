@@ -173,7 +173,7 @@ struct PhoneInputView: View {
         VStack(alignment: .leading, spacing: 8) {
             EnterTextView()
             
-            TextFieldTitleView(title: "Телефон")
+            TextFieldTitleView(title: String(localized: "Phone"))
             
             TextField("+7 ___ ___-__-__", text: $phoneInput)
                 .onChange(of: phoneInput) { newValue in
@@ -217,9 +217,9 @@ struct RegisterButtonView: View {
             print("Регистрация")
         }) {
             HStack(alignment: .center, spacing: 8) {
-                Text("Впервые тут?")
+                Text("First time here?")
                     .foregroundColor(.gray)
-                Text("Зарегистрироваться")
+                Text("Registration")
                     .foregroundColor(.accentColor)
             }
             .nunitoBold(size: 16)
@@ -229,7 +229,7 @@ struct RegisterButtonView: View {
 
 struct EnterTextView: View {
     var body: some View {
-        Text("Вход")
+        Text("Enter")
             .nunitoBold(size: 28)
             .foregroundColor(.text001)
             .padding(.bottom, 10)
@@ -249,7 +249,7 @@ struct TimerResendCodeView: View {
             Button(action: {
                 viewModel.restartTimer()
             }) {
-                Text("Отправить код повторно")
+                Text("Send the code again")
                     .foregroundColor(.accentColor)
                     .nunitoBold(size: 16)
             }
@@ -262,7 +262,7 @@ struct NextButtonView: View {
     var isValid: Bool
     
     var body: some View {
-        Text("Далее")
+        Text("Next")
             .frame(maxWidth: .infinity)
             .padding()
             .nunitoBold(size: 18)
@@ -278,7 +278,7 @@ struct TextFieldTitleView: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 4) {
-            Text("Введите код")
+            Text(title)
                 .foregroundStyle(.text002)
                 .nunitoBold(size: 14)
             Text("*")
@@ -296,13 +296,13 @@ struct OTPFormView: View {
         VStack(alignment: .leading, spacing: 8) {
             EnterTextView()
             
-            (Text("Мы выслали вам код подтверждения на номер ")
+            (Text("We've sent you a confirmation code to the number ")
              + Text(viewModel.phoneMasked).bold())
             .nunitoMedium(size: 16)
             .foregroundColor(.text001)
             .fixedSize(horizontal: false, vertical: true)
             
-            TextFieldTitleView(title: "Введите код")
+            TextFieldTitleView(title: String(localized: "Enter Code"))
             
             OTPFields(code: $viewModel.code)
                 .padding(.vertical, 0)
