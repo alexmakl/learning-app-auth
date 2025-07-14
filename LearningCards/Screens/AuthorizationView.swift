@@ -13,7 +13,7 @@ struct AuthorizationView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                PatternStarView(starSize: geometry.size.height - formHeight(geometry: geometry))
+                PatternStarView(starSize: geometry.size.height - formHeight(geometry: geometry), animationDuration: 3)
                     .ignoresSafeArea(edges: .top)
                     .frame(height: geometry.size.height - formHeight(geometry: geometry))
                 
@@ -171,34 +171,6 @@ struct OTPFields: View {
 
 #Preview {
     AuthorizationView()
-}
-
-struct PatternStarView: View {
-    @State private var starIndex = 0
-    let starImages = ["star_happy", "star_sleep", "star_blink"]
-    let starSize: CGFloat
-    
-    var body: some View {
-        ZStack {
-            Color.orange.ignoresSafeArea()
-            Image("background_pattern")
-                .resizable()
-                .scaledToFill()
-            
-            Image(starImages[starIndex])
-                .resizable()
-                .frame(maxWidth: min(236, starSize), maxHeight: min(236, starSize))
-                .transition(.scale.combined(with: .opacity))
-        }
-        .animation(.easeInOut, value: starIndex)
-        .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { _ in
-                withAnimation {
-                    starIndex = (starIndex + 1) % starImages.count
-                }
-            }
-        }
-    }
 }
 
 struct PhoneInputView: View {
